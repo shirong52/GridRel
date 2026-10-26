@@ -1,0 +1,45 @@
+# Low-rank metric on frozen CLIP patches. One loss: same-image swap hinge.
+# Question: can v^T (I+AB^T) t make each object word prefer its own region
+# over the other object, without rewriting the patches?
+# Controlled change vs raw cosine: learn alpha, A, B (rank 16).
+# alpha starts at 0, so the untrained score is the raw dot product.
+# Val swap pairs are scored once. They are not used to pick rank or lr.
+run_id: bilinear_swap_rank16_seed15
+stage: diagnosis
+variant: low_rank_bilinear_swap
+
+paths:
+  repo_root: /root/autodl-tmp/DCSM_Ideal_CLIP
+  coco_dir: /root/autodl-tmp/dataset/retrival/coco
+  clip_model: /root/autodl-tmp/model/clip_vit_b
+  output_dir: validation_chain/3D/alignment/runs/bilinear_swap_rank16_seed15
+
+data:
+  train_split: train2017
+  val_split: val2017
+  n_images: 2000
+  n_select: 400
+  seed: 15
+  min_box_area: 1024
+  min_pos_patches: 1
+  min_neg_patches: 1
+  min_exclusive_patches: 1
+
+model:
+  dense_feat_layer: last
+  text_seq: 30
+  clip_batch_size: 16
+  device: cuda
+  patch_grid: 14
+  patch_size: 16
+  rank: 16
+
+train:
+  epochs: 5
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0
+  margin: 0.0
+  # Checked on the select images after this many epochs. A swap gap that
+  # does not beat the frozen cosine stops the run.
+  min_epochs_before_gap_check: 2

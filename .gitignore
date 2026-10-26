@@ -1,0 +1,35 @@
+# experiment outputs (do not ship)
+runs/
+alignment/runs/
+outputs/
+logs/
+artifacts/
+
+# checkpoints
+*.pt
+*.pth
+*.ckpt
+*.bin
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# archives / arrays
+*.zip
+*.tar
+*.gz
+*.npz
+*.npy
+*.h5
+*.pkl

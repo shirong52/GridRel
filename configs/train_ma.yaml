@@ -1,0 +1,39 @@
+# Stage 1: train frozen calibrated similarity channel M^A (low-rank bilinear).
+# Paper: s(v,t)=v^T t + α (A^T v)^T (B^T t), rank 16, swap hinge on exclusive patches.
+run_id: bilinear_swap_rank16_seed15
+stage: diagnosis
+variant: low_rank_bilinear_swap
+
+paths:
+  repo_root: /root/autodl-tmp/GridRel
+  coco_dir: /root/autodl-tmp/dataset/retrival/coco
+  clip_model: /root/autodl-tmp/model/clip_vit_b
+  output_dir: alignment/runs/bilinear_swap_rank16_seed15
+
+data:
+  train_split: train2017
+  val_split: val2017
+  n_images: 2000
+  n_select: 400
+  seed: 15
+  min_box_area: 1024
+  min_pos_patches: 1
+  min_neg_patches: 1
+  min_exclusive_patches: 1
+
+model:
+  dense_feat_layer: last
+  text_seq: 30
+  clip_batch_size: 16
+  device: cuda
+  patch_grid: 14
+  patch_size: 16
+  rank: 16
+
+train:
+  epochs: 5
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0
+  margin: 0.0
+  min_epochs_before_gap_check: 2

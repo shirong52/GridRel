@@ -1,0 +1,33 @@
+# Full GridRel evaluation: Winoground / WhatsUp (6 splits) / SugarCrepe / ARO-VR.
+# Subset metrics are written under each benchmark (WhatsUp splits, SugarCrepe subsets).
+paths:
+  repo_root: /root/autodl-tmp/GridRel
+  clip_model: /root/autodl-tmp/model/clip_vit_b
+  composition_dir: /root/autodl-tmp/dataset/composition
+  whatsup_dir: /root/autodl-tmp/dataset/composition/whatsup_all
+  winoground_dir: /root/autodl-tmp/dataset/composition/winoground
+  dcsm_checkpoints:
+    gridrel: /root/autodl-tmp/GridRel/runs/gridrel_seed15/checkpoints/gridrel_seed15_ep2_bs16_lr0.002_drop0.1_seed15.pt
+
+eval:
+  device: cuda
+  text_seq: 30
+  include_clip: false
+  dcsm_text_prefix: "A picture of "
+  dcsm_text_prefix_whatsup: ""
+  benchmarks:
+    - whatsup
+    - winoground
+    - sugarcrepe
+    - aro_visual_relation
+  sugarcrepe_subsets:
+    - replace_rel
+  whatsup_splits:
+    - Controlled_Images_A
+    - Controlled_Images_B
+    - COCO_QA_one_obj
+    - COCO_QA_two_obj
+    - VG_QA_one_obj
+    - VG_QA_two_obj
+
+output_dir: /root/autodl-tmp/GridRel/runs/eval/gridrel_seed15
