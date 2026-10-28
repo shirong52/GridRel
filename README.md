@@ -1,49 +1,98 @@
 # GridRel
 
-Paper main-path implementation: multi-channel grid scoring on a frozen CLIP encoder.
+GridRel is a framework for spatial relation understanding with a frozen CLIP backbone. This repository provides code for two-stage training and evaluation.
 
-```text
-X = Concat(M, M^A, G, R) → reshape3d → CLS + Conv3d dual-branch scorer
-```
+## Installation
 
-This tree is extracted from `DCSM_Ideal_CLIP/validation_chain/3D` and keeps only GridRel. Training data and CLIP weights still point at the existing local paths; other projects are left unchanged.
-
-## Layout
-
-```text
-configs/
-  train_ma.yaml       # Stage 1: train calibrated channel M^A
-  train_gridrel.yaml  # Stage 2: train GridRel scorer
-  eval.yaml           # Full eval (WhatsUp / Winoground / … and subsets)
-scripts/
-  train_ma.py
-  train_gridrel.py
-  eval_gridrel.py
-lib/                  # M^A, reshape3d, dual-branch scorer, training loop
-src/                  # Channel construction, data, eval helpers
-alignment/            # Stage 1 code and M^A checkpoint
-```
-
-## Training
+Clone the repository:
 
 ```bash
-# Stage 1 (skip if alignment/.../bilinear_metric.pt already exists)
-python scripts/train_ma.py --config configs/train_ma.yaml
+git clone https://github.com/shirong52/GridRel.git
+cd GridRel
+```
 
-# Stage 2
+Use Python 3.10 and install the core dependencies below. The PyTorch command is for CUDA 12.1; choose a suitable build for your environment from the [official instructions](https://pytorch.org/get-started/previous-versions/).
+
+```bash
+pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
+pip install transformers==4.26.1 huggingface_hub==0.27.1 numpy==1.26.3 Pillow matplotlib tqdm PyYAML
+```
+
+## Project Structure
+
+```text
+GridRel/
+├── configs/       # Training and evaluation configurations
+├── scripts/       # Training and evaluation entry points
+├── alignment/     # Stage 1 similarity calibration
+├── lib/           # GridRel model and training loop
+└── src/           # Dataset readers and shared utilities
+```
+
+## Data
+
+### Stage 1: COCO
+
+Download **COCO 2017** from the [official website](https://cocodataset.org/#download), including the training images, validation images, and train/val annotations. Both instance and caption annotations are required.
+
+Organize the data under `data/coco/` with `train2017/`, `val2017/`, and `annotations/` subdirectories.
+
+### Stage 2: Objaverse Spatial
+
+Use the Objaverse spatial training data released by [DCSM / Ideal-CLIP](https://github.com/Raphoo/DCSM_Ideal_CLIP):
+
+- **Original download:** [Google Drive](https://drive.google.com/drive/folders/1W5KNbdWM1vSMg7TYqf1RRvcL_uhZPbUP) — select the Objaverse spatial dataset.
+- **Download mirror:** [Hugging Face](https://huggingface.co/datasets/lomlsr/objaverse_spatial).
+
+Download `objaverse_train_cutmix_newrelations_withbg.zip` and extract it into `data/`. Keep the original filenames and the paired `CUTMIX_` images. The image directory should be `data/objaverse_train_cutmix_newrelations_withbg/`.
+
+The Hugging Face repository is a mirror of the original training data. Please credit the original dataset providers when using it.
+
+## Model Checkpoints
+
+Download the pretrained checkpoints from [Hugging Face](https://huggingface.co/lomlsr/GridRel):
+
+- `bilinear_metric.pt`: Stage 1 similarity calibration.
+- `bilinear_mgr_a.pt`: Trained GridRel model.
+
+Place downloaded checkpoints in `checkpoints/` and update the corresponding paths in the configuration files.
+
+## Usage
+
+Run all commands from the repository root. Before running, update the `paths` section of each YAML configuration for your environment. Set `repo_root` to your GridRel checkout and `clip_model` to `openai/clip-vit-base-patch16` or a local copy of that model.
+
+### Stage 1: Similarity Calibration
+
+Set `paths.coco_dir` in `configs/train_ma.yaml` to your COCO directory and choose `paths.output_dir` for the training outputs. Then run:
+
+```bash
+python scripts/train_ma.py --config configs/train_ma.yaml
+```
+
+The calibration checkpoint is saved as `checkpoints/bilinear_metric.pt` inside the configured output directory. You can skip this stage by downloading the pretrained calibration checkpoint.
+
+### Stage 2: GridRel Training
+
+In `configs/train_gridrel.yaml`, set `paths.data_path` to the parent of the Objaverse image directory, `paths.alignment_checkpoint` to the Stage 1 checkpoint, and the model/figure output paths to your preferred locations. Then run:
+
+```bash
 python scripts/train_gridrel.py --config configs/train_gridrel.yaml
 ```
 
-Optional overrides, e.g. `python scripts/train_gridrel.py --override train.epochs=1`.
+Model checkpoints are saved to `paths.model_save_path`. Training settings such as batch size, learning rate, and number of epochs can be changed in the configuration file.
 
-## Evaluation
+### Evaluation
+
+Set the model checkpoint, CLIP model, benchmark data paths, and output directory in `configs/eval.yaml`. Then run:
 
 ```bash
 python scripts/eval_gridrel.py --config configs/eval.yaml
 ```
 
-`eval.yaml` runs the full benchmark suite and writes overall metrics plus internal subsets (WhatsUp 6 splits, SugarCrepe subsets, etc.).
+The default configuration evaluates WhatsUp, Winoground, SugarCrepe (`replace_rel`), and ARO Visual-Relation. Results are saved to the configured output directory.
 
-## Naming
+**Note:** the evaluation script requires the external `relalign_clip` helper package, which is not included in this repository. Make it importable before running evaluation.
 
-In configs, `channel_mode: gridrel` is an alias of the previous `mgr_a` mode: `[M, M^A, G, R]` (12 channels).
+## Acknowledgments
+
+This project builds on [CLIP](https://github.com/openai/CLIP) and [DCSM / Ideal-CLIP](https://github.com/Raphoo/DCSM_Ideal_CLIP). We thank the original authors for sharing their code and datasets.
