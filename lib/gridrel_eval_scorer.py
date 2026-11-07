@@ -213,17 +213,9 @@ class SharedClipDCSMScorer:
         self.ext_emb = ext.to(device)
 
     def _format_texts(self, captions: Sequence[str]) -> list[str]:
-        if self.use_gr_channels or getattr(self, "_topology_scorer", False):
-            base = [self.text_prefix + c for c in captions]
-        else:
-            base = [self.text_prefix + c for c in captions]
-        return [
-            t.replace(" behind ", " above ")
-            .replace(" in front of ", " below ")
-            .replace(" bottom", " below")
-            .replace(" top", " above")
-            for t in base
-        ]
+        # Captions stay as written. Relation channels parse the original
+        # eight-class string; do not fold behind/top/bottom into above/below.
+        return [self.text_prefix + c for c in captions]
 
     @torch.no_grad()
     def _dense_feats(self, images: Sequence[Image.Image], texts: Sequence[str]):

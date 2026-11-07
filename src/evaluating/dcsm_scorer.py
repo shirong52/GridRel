@@ -373,16 +373,9 @@ class DCSMScorer:
         return self.task_net(self._net_input(cossim, texts, aligned))
 
     def _format_texts(self, captions: Sequence[str]) -> List[str]:
-        if self.use_gr_channels:
-            return [self.text_prefix + c for c in captions]
-        return [
-            self.text_prefix
-            + c.replace(" behind ", " above ")
-            .replace(" in front of ", " below ")
-            .replace(" bottom", " below")
-            .replace(" top", " above")
-            for c in captions
-        ]
+        # Captions stay as written. Eight-class relation parsing reads the
+        # original string; do not fold behind/top/bottom into above/below.
+        return [self.text_prefix + c for c in captions]
 
     @torch.no_grad()
     def _dense_feats(
